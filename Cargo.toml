@@ -1,0 +1,6 @@
+[package]
+name = "gene_code"
+version = "0.1.0"
+authors = ["Benjamin Tucker <nenofite@gmail.com>"]
+
+[dependencies]
