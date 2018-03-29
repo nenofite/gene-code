@@ -8,7 +8,7 @@ use super::gene;
 use rand::Rng;
 
 // A program as a gene. This is a simple wrapper so we can implement the required trait.
-pub struct ProgramGene(Vec<lang::Prog>);
+pub struct ProgramGene(pub Vec<lang::Prog>);
 
 // Generate a random number or command
 fn rand_prog<R: Rng>(rng: &mut R) -> lang::Prog {

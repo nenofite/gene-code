@@ -29,22 +29,22 @@ pub struct Stack {
 
 impl Stack {
     // Create a new, empty stack
-    fn new() -> Stack {
+    pub fn new() -> Stack {
         Stack { data: Vec::new(), commands: Vec::new() }
     }
 
     // Push data onto the stack
-    fn push(&mut self, d: i32) {
+    pub fn push(&mut self, d: i32) {
         self.data.push(d);
     }
 
     // Pop data off the stack, or get the default value from an empty stack
-    fn pop(&mut self) -> i32 {
+    pub fn pop(&mut self) -> i32 {
         self.data.pop().unwrap_or(0)
     }
 
     // Run a single command
-    fn run(&mut self, c: Command) {
+    pub fn run(&mut self, c: Command) {
         use self::Command::*;
         match c {
             Add | Sub | Mult | Div => {
@@ -71,7 +71,7 @@ impl Stack {
     }
 
     // Queue the given program into the command stack. This doesn't actually run anything.
-    fn queue_program(&mut self, program: &[Prog]) {
+    pub fn queue_program(&mut self, program: &[Prog]) {
         // Copy the program into the top of the stack
         for p in program.iter().rev() {
             self.commands.push(*p);
@@ -79,7 +79,7 @@ impl Stack {
     }
 
     // Run the next command on the stack. Does nothing if the stack is empty.
-    fn run_next(&mut self) {
+    pub fn run_next(&mut self) {
         if let Some(p) = self.commands.pop() {
             match p {
                 Prog::D(d) => self.push(d),
@@ -89,7 +89,7 @@ impl Stack {
     }
 
     // Run until the command stack is empty. Returns the number of steps taken.
-    fn run_all(&mut self) -> usize {
+    pub fn run_all(&mut self) -> usize {
         let mut steps = 0;
         while !self.commands.is_empty() {
             self.run_next();
@@ -99,7 +99,7 @@ impl Stack {
     }
 
     // Run at most `max` steps. Returns the number of steps taken.
-    fn run_until(&mut self, max: usize) -> usize {
+    pub fn run_until(&mut self, max: usize) -> usize {
         let mut steps = 0;
         while steps < max && !self.commands.is_empty() {
             self.run_next();

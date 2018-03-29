@@ -23,7 +23,7 @@ pub struct Pool<T> {
 
 impl<T: Gene> Pool<T> {
     // Create and fill a pool of the given size.
-    fn new<R: Rng>(size: usize, rng: &mut R) -> Pool<T> {
+    pub fn new<R: Rng>(size: usize, rng: &mut R) -> Pool<T> {
         let mut pool = Pool { genes: Vec::with_capacity(size) };
         for _ in 0 .. size {
             pool.genes.push((Gene::generate(rng), 0.0));
@@ -34,7 +34,7 @@ impl<T: Gene> Pool<T> {
     // Evolve one generation using the given fitness function. All genes currently in the pool are
     // evaluated for fitness, then the most fit half is kept and the least fit half is replaced
     // with mutations of the more fit half.
-    fn evolve<F, R>(&mut self, fitness: F, rng: &mut R)
+    pub fn evolve<F, R>(&mut self, fitness: F, rng: &mut R)
     where F: Fn(&T) -> f32,
           R: Rng {
         // Update fitness of all genes
