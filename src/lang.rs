@@ -13,6 +13,7 @@ pub enum Command {
 }
 
 // Either a piece of data or a command. Programs are sequences of Progs
+#[derive(Clone, Copy)]
 pub enum Prog {
     D(i32),
     C(Command),
@@ -23,7 +24,7 @@ pub struct Stack {
     // The data on the stack (no commands)
     data: Vec<i32>,
     // The stack of commands yet to be executed
-    commands: Vec<Command>,
+    commands: Vec<Prog>,
 }
 
 impl Stack {
@@ -69,18 +70,42 @@ impl Stack {
         }
     }
 
-    // Run the given program
-    fn run_program(&mut self, program: &[Prog]) {
-        // Iterate over each prog
-        for p in program {
-            match p {
-                // If it's data, push it
-                &Prog::D(d) => self.push(d),
+    // Queue the given program into the command stack. This doesn't actually run anything.
+    fn queue_program(&mut self, program: &[Prog]) {
+        // Copy the program into the top of the stack
+        for p in program.iter().rev() {
+            self.commands.push(*p);
+        }
+    }
 
-                // If it's a command, run it
-                &Prog::C(c) => self.run(c),
+    // Run the next command on the stack. Does nothing if the stack is empty.
+    fn run_next(&mut self) {
+        if let Some(p) = self.commands.pop() {
+            match p {
+                Prog::D(d) => self.push(d),
+                Prog::C(c) => self.run(c),
             }
         }
+    }
+
+    // Run until the command stack is empty. Returns the number of steps taken.
+    fn run_all(&mut self) -> usize {
+        let mut steps = 0;
+        while !self.commands.is_empty() {
+            self.run_next();
+            steps += 1;
+        }
+        steps
+    }
+
+    // Run at most `max` steps. Returns the number of steps taken.
+    fn run_until(&mut self, max: usize) -> usize {
+        let mut steps = 0;
+        while steps < max && !self.commands.is_empty() {
+            self.run_next();
+            steps += 1;
+        }
+        steps
     }
 }
 
@@ -118,13 +143,35 @@ mod tests {
         assert_eq!(s.pop(), -7);
         assert_eq!(s.data.len(), 0);
 
+        s.push(3);
+        s.push(7);
+        s.run(Command::Mult); // 3 * 7
+        assert_eq!(s.pop(), 21);
+        assert_eq!(s.data.len(), 0);
+
+        s.push(7);
+        s.push(3);
+        s.run(Command::Div); // 7 / 3
+        assert_eq!(s.pop(), 2);
+        assert_eq!(s.data.len(), 0);
+
         // We can run whole programs (sequences of commands)
         let prog = [Prog::D(10), Prog::D(2), Prog::C(Command::Div), Prog::C(Command::Dup)];
-        s.run_program(&prog);
+        s.queue_program(&prog);
+        assert_eq!(s.run_all(), 4);
         assert_eq!(s.pop(), 5);
         assert_eq!(s.pop(), 5);
         assert_eq!(s.data.len(), 0);
+        assert_eq!(s.commands.len(), 0);
 
         // We can run segments of programs, then resume then later
+        s.queue_program(&prog);
+        assert_eq!(s.run_until(2), 2);
+        assert_eq!(s.data.len(), 2);
+        assert_eq!(s.run_all(), 2);
+        assert_eq!(s.pop(), 5);
+        assert_eq!(s.pop(), 5);
+        assert_eq!(s.data.len(), 0);
+        assert_eq!(s.commands.len(), 0);
     }
 }
