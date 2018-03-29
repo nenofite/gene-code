@@ -47,7 +47,7 @@ impl<T: Gene> Pool<T> {
         // the first generation, and if a mutation was vastly better/worse than its parent.
         self.genes.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(::std::cmp::Ordering::Equal).reverse());
 
-        // Replace lower half with mutations of the upper half
+        // Replace less fit half with mutations of the more fit half
         let start_worse_half = (self.genes.len() + 1) / 2;
         let end_better_half = self.genes.len() / 2;
         for i in 0 .. end_better_half {
