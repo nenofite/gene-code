@@ -2,8 +2,10 @@
 // The stack-based programming language
 //
 
+use std::fmt::Debug;
+
 // A builtin command to run on the stack
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum Command {
     Add,
     Sub,
@@ -13,13 +15,14 @@ pub enum Command {
 }
 
 // Either a piece of data or a command. Programs are sequences of Progs
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum Prog {
     D(i32),
     C(Command),
 }
 
 // A stack to run programs on, and all other state used by the interpreter
+#[derive(Clone, Debug)]
 pub struct Stack {
     // The data on the stack (no commands)
     data: Vec<i32>,
@@ -56,7 +59,7 @@ impl Stack {
                     Add => a + b,
                     Sub => a - b,
                     Mult => a * b,
-                    Div => a / b,
+                    Div => if b != 0 { a / b } else { 0 },
                     _ => panic!(),
                 });
             }

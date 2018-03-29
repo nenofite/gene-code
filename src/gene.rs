@@ -54,6 +54,11 @@ impl<T: Gene> Pool<T> {
             self.genes[i + start_worse_half].0 = self.genes[i].0.mutate(rng);
         }
     }
+
+    // Get the current best gene. This is only valid after a call to evolve.
+    pub fn get_best(&self) -> &T {
+        &self.genes[0].0
+    }
 }
 
 #[cfg(test)]
@@ -99,6 +104,7 @@ mod tests {
 
         // Make sure genes were re-ordered by fitness
         assert_eq!(pool.genes[0].0.id, 10);
+        assert_eq!(pool.get_best().id, 10);
         assert_eq!(pool.genes[0].1, 10.0);
         assert_eq!(pool.genes[4].0.id, 6);
         assert_eq!(pool.genes[4].1, 6.0);
