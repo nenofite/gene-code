@@ -19,12 +19,14 @@ pub struct Pool<T> {
     // The genes in the pool paired with their fitness, in no particular order. Do not assume the
     // fitness value is up to date
     pub genes: Vec<(T, f32)>,
+    // The back-buffer of genes, used when stirring and mutating the pool
+    back_genes: Vec<(T, f32)>,
 }
 
 impl<T: Gene> Pool<T> {
     // Create and fill a pool of the given size.
     pub fn new<R: Rng>(size: usize, rng: &mut R) -> Pool<T> {
-        let mut pool = Pool { genes: Vec::with_capacity(size) };
+        let mut pool = Pool { genes: Vec::with_capacity(size), back_genes: Vec::with_capacity(size) };
         for _ in 0 .. size {
             pool.genes.push((Gene::generate(rng), 0.0));
         }
@@ -37,31 +39,60 @@ impl<T: Gene> Pool<T> {
     pub fn evolve<F, R>(&mut self, fitness: F, rng: &mut R)
     where F: Fn(&T) -> f32,
           R: Rng {
+
+        // The pool size to maintain
+        let len = self.genes.len();
+
         // Update fitness of all genes
         for pair in self.genes.iter_mut() {
             pair.1 = fitness(&pair.0);
         }
 
-        // Sort by fitness. Because the pool is almost always two sorted lists concatenated
-        // together, stable sort will actually be faster than unstable sort. This is only untrue on
-        // the first generation, and if a mutation was vastly better/worse than its parent.
-        self.genes.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(::std::cmp::Ordering::Equal).reverse());
+        // Swap into the back buffer so we can assemble a new pool of genes
+        ::std::mem::swap(&mut self.genes, &mut self.back_genes);
 
-        // Replace less fit half with mutations of the more fit half
-        let third = self.genes.len() / 3;
-        let twothird = self.genes.len() * 2 / 3;
-        for i in 0 .. third {
-            self.genes[i + third].0 = self.genes[i].0.mutate(rng);
-            //self.genes[i + third].0 = self.genes[0].0.mutate(rng);
+        // Sum up the total fitness
+        let mut total_fitness = 0.0;
+        for pair in &self.back_genes {
+            total_fitness += pair.1;
         }
-        for i in twothird .. self.genes.len() {
-            self.genes[i].0 = Gene::generate(rng);
+
+        // Fill the first third of the pool by stochastic selection (higher fitness = more likely
+        // to be selected), and the next third with mutations of these selected genes
+        self.genes.clear();
+        while self.genes.len() < len * 2/3 && !self.back_genes.is_empty() {
+            // Pick a number within total fitness
+            let mut f = rng.gen_range(0.0, total_fitness);
+            // Select the gene under that fitness offset
+            let mut i = 0;
+            f -= self.back_genes[i].1;
+            while f > 0.0 {
+                i = (i + 1) % self.back_genes.len();
+                f -= self.back_genes[i].1;
+            }
+            // Subtract its fitness from the total
+            total_fitness -= self.back_genes[i].1;
+            // Add a mutation of the gene
+            self.genes.push((self.back_genes[i].0.mutate(rng), 0.0));
+            // Move the gene from back_genes to genes
+            self.genes.push(self.back_genes.remove(i));
+        }
+
+        // Fill the last third by generating new genes
+        while self.genes.len() < len {
+            self.genes.push((Gene::generate(rng), 0.0));
         }
     }
 
     // Get the current best gene. This is only valid after a call to evolve.
     pub fn get_best(&self) -> &T {
-        &self.genes[0].0
+        let mut best = &self.genes[0];
+        for g in &self.genes {
+            if g.1 > best.1 {
+                best = g;
+            }
+        }
+        &best.0
     }
 }
 

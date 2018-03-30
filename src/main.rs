@@ -16,7 +16,7 @@ pub fn main() {
     // Print header row
     println!("Generation\tFitness...");
     // Evolve for many generations
-    for i in 0 .. 1000 {
+    for i in 0 .. 100 {
         pool.evolve(|g| prog_gene::fitness(|a, b| a*a + b*b, g), rng);
         //println!("Iter {} best: {}", i, pool.get_best());
         // Print generation
@@ -29,4 +29,7 @@ pub fn main() {
     }
     // Print the best gene
     println!("Best: {}", pool.get_best());
+    for g in &pool.genes {
+        println!("{}", g.0);
+    }
 }
