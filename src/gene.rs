@@ -124,9 +124,9 @@ mod tests {
 
     #[test]
     fn gen_pool() {
-        // A deterministic mock RNG for testing
-        //let rng = &mut rand::mock::StepRng::new(0, 1);
-        let rng = &mut rand::thread_rng();
+        // A deterministic RNG for testing
+        use rand::SeedableRng;
+        let rng = &mut rand::Isaac64Rng::from_seed(&[123]);
 
         // Generate the pool by calling generate() n times.
         let mut pool = Pool::<TestGene>::new(10, rng);
@@ -137,19 +137,23 @@ mod tests {
         let fitness = |g: &TestGene| { g.id as f32 };
         pool.evolve(fitness, rng);
 
-        // Make sure genes were re-ordered by fitness
-        assert_eq!(pool.genes[0].0.id, 10);
-        assert_eq!(pool.get_best().id, 10);
-        assert_eq!(pool.genes[0].1, 10.0);
-        assert_eq!(pool.genes[2].0.id, 8);
-        assert_eq!(pool.genes[2].1, 8.0);
+        // Make sure 4 new genes were generated
+        unsafe {
+            assert_eq!(NEXT_ID, 15);
+        }
 
-        // Make sure middle third is mutations of most fit third
-        assert_eq!(pool.genes[3].0.id, -10);
-        assert_eq!(pool.genes[5].0.id, -8);
-
-        // Make sure last third are new, random genes
+        // Make sure the correct genes were selected (because we know the seed)
+        // First the mutation, then the original
+        assert_eq!(pool.genes[0].0.id, -6);
+        assert_eq!(pool.genes[1].0.id, 6);
+        assert_eq!(pool.genes[2].0.id, -9);
+        assert_eq!(pool.genes[3].0.id, 9);
+        assert_eq!(pool.genes[4].0.id, -1);
+        assert_eq!(pool.genes[5].0.id, 1);
+        // Remaining third is newly generated genes
         assert_eq!(pool.genes[6].0.id, 11);
+        assert_eq!(pool.genes[7].0.id, 12);
+        assert_eq!(pool.genes[8].0.id, 13);
         assert_eq!(pool.genes[9].0.id, 14);
     }
 }
