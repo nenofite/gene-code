@@ -45,28 +45,32 @@ impl gene::Gene for ProgramGene {
     }
 
     fn mutate<R: Rng>(&self, rng: &mut R) -> Self {
+        // Pick a number of modifications between 1 and len of program
+        let mods = rng.gen_range(1, self.0.len().max(2));
         // Add, delete, or replace a random prog
         let mut result = self.0.clone();
-        match rng.gen_range(0, 3) {
-            0 => {
-                // Add
-                let prog = rand_prog(rng);
-                let i = rng.gen_range(0, result.len()+1);
-                result.insert(i, prog);
-            }
-            1 => {
-                // Delete
-                if result.len() > 0 {
-                    let i = rng.gen_range(0, result.len());
-                    result.remove(i);
-                }
-            }
-            _ => {
-                // Replace
-                if result.len() > 0 {
+        for _ in 0 .. mods {
+            match rng.gen_range(0, 3) {
+                0 => {
+                    // Add
                     let prog = rand_prog(rng);
-                    let i = rng.gen_range(0, result.len());
-                    result[i] = prog;
+                    let i = rng.gen_range(0, result.len()+1);
+                    result.insert(i, prog);
+                }
+                1 => {
+                    // Delete
+                    if result.len() > 0 {
+                        let i = rng.gen_range(0, result.len());
+                        result.remove(i);
+                    }
+                }
+                _ => {
+                    // Replace
+                    if result.len() > 0 {
+                        let prog = rand_prog(rng);
+                        let i = rng.gen_range(0, result.len());
+                        result[i] = prog;
+                    }
                 }
             }
         }
