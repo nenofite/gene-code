@@ -14,6 +14,9 @@ pub trait Gene: Hash + Eq {
 
     // Generate a new gene that is a mutation of this gene.
     fn mutate<R: Rng>(&self, rng: &mut R) -> Self;
+
+    // Cross this gene with another gene to produce a child.
+    fn cross<R: Rng>(&self, other: &Self, rng: &mut R) -> Self;
 }
 
 // A pairing of a gene and its fitness. Also contains an internal flag for whether the gene has
@@ -85,10 +88,10 @@ impl<T, F> Pool<T, F>
             total_fitness += pair.1;
         }
 
-        // Fill the first third of the pool by stochastic selection (higher fitness = more likely
-        // to be selected), and the next third with mutations of these selected genes
+        // Fill the first fourth of the pool by stochastic selection (higher fitness = more likely
+        // to be selected)
         self.genes.clear();
-        while self.genes.len() < len * 2/3 && !self.back_genes.is_empty() {
+        while self.genes.len() < len / 4 && !self.back_genes.is_empty() {
             // Pick a number within total fitness
             let mut f = rng.gen_range(0.0, total_fitness);
             // Select the gene under that fitness offset
@@ -100,15 +103,29 @@ impl<T, F> Pool<T, F>
             }
             // Subtract its fitness from the total
             total_fitness -= self.back_genes[i].1;
-            // Add a mutation of the gene
-            let mutated_gene = self.back_genes[i].0.mutate(rng);
-            let mutated_fit = (self.fitness)(&mutated_gene);
-            self.genes.push((mutated_gene, mutated_fit));
             // Move the gene from back_genes to genes
             self.genes.push(self.back_genes.remove(i));
         }
+        // The number of genes that actually got selected
+        let num_selected = self.genes.len();
 
-        // Fill the last third by generating new genes
+        // Fill the next fourth with crosses
+        for i in 0 .. num_selected {
+            // Pick a random cross partner
+            let with_i = rng.gen_range(0, len/4);
+            let crossed_gene = self.genes[i].0.cross(&self.genes[with_i].0, rng);
+            let crossed_fit = (self.fitness)(&crossed_gene);
+            self.genes.push((crossed_gene, crossed_fit));
+        }
+
+        // Fill the next fourth with mutations
+        for i in 0 .. num_selected {
+            let mutated_gene = self.genes[i].0.mutate(rng);
+            let mutated_fit = (self.fitness)(&mutated_gene);
+            self.genes.push((mutated_gene, mutated_fit));
+        }
+
+        // Fill the last fourth by generating new genes
         while self.genes.len() < len {
             let generated_gene = Gene::generate(rng);
             let generated_fit = (self.fitness)(&generated_gene);
@@ -136,7 +153,7 @@ mod tests {
 
     static mut NEXT_ID: i32 = 1;
 
-    #[derive(PartialEq, Eq, Hash, Clone)]
+    #[derive(PartialEq, Eq, Hash, Clone, Debug)]
     struct TestGene {
         id: i32,
     }
@@ -152,6 +169,10 @@ mod tests {
 
         fn mutate<R: Rng>(&self, _rng: &mut R) -> Self {
             TestGene { id: -self.id }
+        }
+
+        fn cross<R: Rng>(&self, other: &Self, _rng: &mut R) -> Self {
+            TestGene { id: self.id * 100 + other.id }
         }
     }
 
@@ -176,14 +197,12 @@ mod tests {
         }
 
         // Make sure the same genes were selected (because we know the random seed)
-        // First the mutation, then the original
-        assert_eq!(pool.genes[0].0.id, -6);
-        assert_eq!(pool.genes[1].0.id, 6);
-        assert_eq!(pool.genes[2].0.id, -9);
-        assert_eq!(pool.genes[3].0.id, 9);
-        assert_eq!(pool.genes[4].0.id, -1);
-        assert_eq!(pool.genes[5].0.id, 1);
-        // Remaining third is newly generated genes
+        assert_eq!(pool.genes[0].0.id, 6);
+        assert_eq!(pool.genes[1].0.id, 9);
+        assert_eq!(pool.genes[2].0.id, 606);
+        assert_eq!(pool.genes[3].0.id, 906);
+        assert_eq!(pool.genes[4].0.id, -6);
+        assert_eq!(pool.genes[5].0.id, -9);
         assert_eq!(pool.genes[6].0.id, 11);
         assert_eq!(pool.genes[7].0.id, 12);
         assert_eq!(pool.genes[8].0.id, 13);

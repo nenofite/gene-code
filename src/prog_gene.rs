@@ -76,6 +76,11 @@ impl gene::Gene for ProgramGene {
         }
         ProgramGene(result)
     }
+
+    fn cross<R: Rng>(&self, other: &Self, rng: &mut R) -> Self {
+        // TODO
+        self.mutate(rng)
+    }
 }
 
 // Implement Display to produce a concise, human-readable view of a program.
