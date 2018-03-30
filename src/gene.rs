@@ -18,7 +18,7 @@ pub trait Gene {
 pub struct Pool<T> {
     // The genes in the pool paired with their fitness, in no particular order. Do not assume the
     // fitness value is up to date
-    genes: Vec<(T, f32)>,
+    pub genes: Vec<(T, f32)>,
 }
 
 impl<T: Gene> Pool<T> {
