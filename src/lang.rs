@@ -2,8 +2,6 @@
 // The stack-based programming language
 //
 
-use std::fmt::Debug;
-
 // A builtin command to run on the stack
 #[derive(Clone, Copy, Debug)]
 pub enum Command {

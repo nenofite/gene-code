@@ -78,7 +78,7 @@ mod tests {
     }
 
     impl Gene for TestGene {
-        fn generate<R: Rng>(rng: &mut R) -> Self {
+        fn generate<R: Rng>(_rng: &mut R) -> Self {
             unsafe {
                 let id = NEXT_ID;
                 NEXT_ID += 1;
@@ -86,7 +86,7 @@ mod tests {
             }
         }
 
-        fn mutate<R: Rng>(&self, rng: &mut R) -> Self {
+        fn mutate<R: Rng>(&self, _rng: &mut R) -> Self {
             TestGene { id: -self.id }
         }
     }

@@ -5,7 +5,7 @@
 use super::lang;
 use super::gene;
 
-use std::fmt::Debug;
+use std::fmt;
 use rand::Rng;
 
 // A program as a gene. This is a simple wrapper so we can implement the required trait.
@@ -74,6 +74,32 @@ impl gene::Gene for ProgramGene {
     }
 }
 
+// Implement Display to produce a concise, human-readable view of a program.
+impl fmt::Display for ProgramGene {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use lang::Prog::{C, D};
+        use lang::Command::*;
+
+        let mut add_space = false;
+        for prog in &self.0 {
+            if add_space {
+                write!(f, " ")?;
+            }
+            add_space = true;
+            match prog {
+                &D(d) => write!(f, "{}", d)?,
+                &C(Add) => write!(f, "+")?,
+                &C(Sub) => write!(f, "-")?,
+                &C(Mult) => write!(f, "*")?,
+                &C(Div) => write!(f, "/")?,
+                &C(Dup) => write!(f, "dup")?,
+                &C(Swap) => write!(f, "swap")?,
+            }
+        }
+        Ok(())
+    }
+}
+
 // Use to create a fitness function that runs the program and compares output to the given reference
 // function. Also gives a slight bonus to shorter programs.
 pub fn fitness<F: Fn(i32, i32) -> i32>(f: F, g: &ProgramGene) -> f32 {
@@ -139,5 +165,15 @@ mod tests {
         // Test program that always returns -1
         let bad_prog = ProgramGene(vec![lang::Prog::D(-1)]);
         assert!((fitness(|a,b| a + b, &bad_prog) - 0.0099).abs() < eps);
+    }
+
+    #[test]
+    fn display_gene() {
+        use lang::Prog::{C, D};
+        use lang::Command::*;
+
+        // Display a concise representation of a program gene
+        let prog = ProgramGene(vec![D(1), C(Sub), D(-30), C(Dup)]);
+        assert_eq!(format!("{}", prog), "1 - -30 dup");
     }
 }
