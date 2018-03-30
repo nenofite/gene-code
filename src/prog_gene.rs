@@ -89,7 +89,7 @@ pub fn fitness<F: Fn(i32, i32) -> i32>(f: F, g: &ProgramGene) -> f32 {
             s.push(b);
             // Run the program
             s.queue_program(&g.0);
-            s.run_until(100);
+            s.run_until(10);
             // Compare the output
             let result = s.pop();
             if result == f(a, b) {

@@ -48,10 +48,14 @@ impl<T: Gene> Pool<T> {
         self.genes.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(::std::cmp::Ordering::Equal).reverse());
 
         // Replace less fit half with mutations of the more fit half
-        let start_worse_half = (self.genes.len() + 1) / 2;
-        let end_better_half = self.genes.len() / 2;
-        for i in 0 .. end_better_half {
-            self.genes[i + start_worse_half].0 = self.genes[i].0.mutate(rng);
+        let third = self.genes.len() / 3;
+        let twothird = self.genes.len() * 2 / 3;
+        for i in 0 .. third {
+            self.genes[i + third].0 = self.genes[i].0.mutate(rng);
+            //self.genes[i + third].0 = self.genes[0].0.mutate(rng);
+        }
+        for i in twothird .. self.genes.len() {
+            self.genes[i].0 = Gene::generate(rng);
         }
     }
 
@@ -106,11 +110,15 @@ mod tests {
         assert_eq!(pool.genes[0].0.id, 10);
         assert_eq!(pool.get_best().id, 10);
         assert_eq!(pool.genes[0].1, 10.0);
-        assert_eq!(pool.genes[4].0.id, 6);
-        assert_eq!(pool.genes[4].1, 6.0);
+        assert_eq!(pool.genes[2].0.id, 8);
+        assert_eq!(pool.genes[2].1, 8.0);
 
-        // Make sure bottom half is mutations of top half
-        assert_eq!(pool.genes[5].0.id, -10);
-        assert_eq!(pool.genes[9].0.id, -6);
+        // Make sure middle third is mutations of most fit third
+        assert_eq!(pool.genes[3].0.id, -10);
+        assert_eq!(pool.genes[5].0.id, -8);
+
+        // Make sure last third are new, random genes
+        assert_eq!(pool.genes[6].0.id, 11);
+        assert_eq!(pool.genes[9].0.id, 14);
     }
 }
