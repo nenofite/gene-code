@@ -3,7 +3,7 @@
 //
 
 // A builtin command to run on the stack
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Command {
     Add,
     Sub,
@@ -14,7 +14,7 @@ pub enum Command {
 }
 
 // Either a piece of data or a command. Programs are sequences of Progs
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Prog {
     D(i32),
     C(Command),

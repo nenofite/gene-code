@@ -4,14 +4,38 @@
 
 extern crate rand;
 use rand::Rng;
+use std::hash::{Hash, Hasher};
+use std::collections::HashSet;
 
 // A type that can be used as a gene. Specifically, it must support random generation and mutation.
-pub trait Gene {
+pub trait Gene: Hash + Eq {
     // Generate a new random gene. This is initially used to fill the pool.
     fn generate<R: Rng>(rng: &mut R) -> Self;
 
     // Generate a new gene that is a mutation of this gene.
     fn mutate<R: Rng>(&self, rng: &mut R) -> Self;
+}
+
+// A pairing of a gene and its fitness. Also contains an internal flag for whether the gene has
+// been selected for the next generation.
+#[derive(Clone)]
+pub struct GenePair<G>(pub G, pub f32, bool);
+
+impl<G: Gene> PartialEq for GenePair<G> {
+    // A custom implementation of equality that ignores the fitness value
+    fn eq(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+
+impl<G: Gene> Eq for GenePair<G> {}
+
+impl<G: Gene> Hash for GenePair<G> {
+    // A custom implementation of hashing that ignores the fitness value, only hashing the gene
+    // itself
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.0.hash(state);
+    }
 }
 
 // A pool of genes
@@ -26,7 +50,7 @@ pub struct Pool<T, F> {
 }
 
 impl<T, F> Pool<T, F>
-    where T: Gene,
+    where T: Gene + Hash + Eq + Clone,
           F: Fn(&T) -> f32,
     {
 
@@ -37,7 +61,7 @@ impl<T, F> Pool<T, F>
             back_genes: Vec::with_capacity(size),
             fitness: fitness,
         };
-        for _ in 0 .. size {
+        while pool.genes.len() < size {
             let gene = Gene::generate(rng);
             let fit = (pool.fitness)(&gene);
             pool.genes.push((gene, fit));
@@ -112,6 +136,7 @@ mod tests {
 
     static mut NEXT_ID: i32 = 1;
 
+    #[derive(PartialEq, Eq, Hash, Clone)]
     struct TestGene {
         id: i32,
     }

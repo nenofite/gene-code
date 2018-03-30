@@ -9,7 +9,7 @@ use std::fmt;
 use rand::Rng;
 
 // A program as a gene. This is a simple wrapper so we can implement the required trait.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct ProgramGene(pub Vec<lang::Prog>);
 
 // Generate a random number or command
