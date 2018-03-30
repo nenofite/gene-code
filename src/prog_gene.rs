@@ -78,8 +78,15 @@ impl gene::Gene for ProgramGene {
     }
 
     fn cross<R: Rng>(&self, other: &Self, rng: &mut R) -> Self {
-        // TODO
-        self.mutate(rng)
+        // Pick a cut point on this gene
+        let stop_self = rng.gen_range(0, self.0.len().max(1));
+        // Pick a cut point on the other gene
+        let start_other = rng.gen_range(0, other.0.len().max(1));
+        // Replace after the cut point
+        ProgramGene(self.0.iter().take(stop_self)
+            .chain(other.0.iter().skip(start_other))
+            .map(Clone::clone)
+            .collect())
     }
 }
 
