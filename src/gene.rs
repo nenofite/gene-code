@@ -15,20 +15,32 @@ pub trait Gene {
 }
 
 // A pool of genes
-pub struct Pool<T> {
+pub struct Pool<T, F> {
     // The genes in the pool paired with their fitness, in no particular order. Do not assume the
     // fitness value is up to date
     pub genes: Vec<(T, f32)>,
     // The back-buffer of genes, used when stirring and mutating the pool
     back_genes: Vec<(T, f32)>,
+    // The fitness function
+    fitness: F,
 }
 
-impl<T: Gene> Pool<T> {
+impl<T, F> Pool<T, F>
+    where T: Gene,
+          F: Fn(&T) -> f32,
+    {
+
     // Create and fill a pool of the given size.
-    pub fn new<R: Rng>(size: usize, rng: &mut R) -> Pool<T> {
-        let mut pool = Pool { genes: Vec::with_capacity(size), back_genes: Vec::with_capacity(size) };
+    pub fn new<R: Rng>(size: usize, fitness: F, rng: &mut R) -> Self {
+        let mut pool = Pool {
+            genes: Vec::with_capacity(size),
+            back_genes: Vec::with_capacity(size),
+            fitness: fitness,
+        };
         for _ in 0 .. size {
-            pool.genes.push((Gene::generate(rng), 0.0));
+            let gene = Gene::generate(rng);
+            let fit = (pool.fitness)(&gene);
+            pool.genes.push((gene, fit));
         }
         pool
     }
@@ -36,17 +48,9 @@ impl<T: Gene> Pool<T> {
     // Evolve one generation using the given fitness function. All genes currently in the pool are
     // evaluated for fitness, then the most fit half is kept and the least fit half is replaced
     // with mutations of the more fit half.
-    pub fn evolve<F, R>(&mut self, fitness: F, rng: &mut R)
-    where F: Fn(&T) -> f32,
-          R: Rng {
-
+    pub fn evolve<R: Rng>(&mut self, rng: &mut R) {
         // The pool size to maintain
         let len = self.genes.len();
-
-        // Update fitness of all genes
-        for pair in self.genes.iter_mut() {
-            pair.1 = fitness(&pair.0);
-        }
 
         // Swap into the back buffer so we can assemble a new pool of genes
         ::std::mem::swap(&mut self.genes, &mut self.back_genes);
@@ -73,14 +77,18 @@ impl<T: Gene> Pool<T> {
             // Subtract its fitness from the total
             total_fitness -= self.back_genes[i].1;
             // Add a mutation of the gene
-            self.genes.push((self.back_genes[i].0.mutate(rng), 0.0));
+            let mutated_gene = self.back_genes[i].0.mutate(rng);
+            let mutated_fit = (self.fitness)(&mutated_gene);
+            self.genes.push((mutated_gene, mutated_fit));
             // Move the gene from back_genes to genes
             self.genes.push(self.back_genes.remove(i));
         }
 
         // Fill the last third by generating new genes
         while self.genes.len() < len {
-            self.genes.push((Gene::generate(rng), 0.0));
+            let generated_gene = Gene::generate(rng);
+            let generated_fit = (self.fitness)(&generated_gene);
+            self.genes.push((generated_gene, generated_fit));
         }
     }
 
@@ -129,20 +137,20 @@ mod tests {
         let rng = &mut rand::Isaac64Rng::from_seed(&[123]);
 
         // Generate the pool by calling generate() n times.
-        let mut pool = Pool::<TestGene>::new(10, rng);
+        let fitness = |g: &TestGene| { g.id as f32 };
+        let mut pool = Pool::new(10, fitness, rng);
         assert_eq!(pool.genes[0].0.id, 1);
         assert_eq!(pool.genes[9].0.id, 10);
 
         // Evolve the pool
-        let fitness = |g: &TestGene| { g.id as f32 };
-        pool.evolve(fitness, rng);
+        pool.evolve(rng);
 
         // Make sure 4 new genes were generated
         unsafe {
             assert_eq!(NEXT_ID, 15);
         }
 
-        // Make sure the correct genes were selected (because we know the seed)
+        // Make sure the same genes were selected (because we know the random seed)
         // First the mutation, then the original
         assert_eq!(pool.genes[0].0.id, -6);
         assert_eq!(pool.genes[1].0.id, 6);
@@ -155,5 +163,9 @@ mod tests {
         assert_eq!(pool.genes[7].0.id, 12);
         assert_eq!(pool.genes[8].0.id, 13);
         assert_eq!(pool.genes[9].0.id, 14);
+        // Also ensure the genes all have up-to-date fitness values
+        for g in &pool.genes {
+            assert_eq!(g.0.id as f32, g.1);
+        }
     }
 }

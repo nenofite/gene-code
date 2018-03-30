@@ -12,12 +12,12 @@ mod prog_gene;
 pub fn main() {
     // Make a pool
     let rng = &mut rand::thread_rng();
-    let mut pool = gene::Pool::new(1000, rng);
+    let mut pool = gene::Pool::new(1000, |g| prog_gene::fitness(|a, b| a*a + b*b, g), rng);
     // Print header row
     println!("Generation\tFitness...");
     // Evolve for many generations
     for i in 0 .. 100 {
-        pool.evolve(|g| prog_gene::fitness(|a, b| a*a + b*b, g), rng);
+        pool.evolve(rng);
         //println!("Iter {} best: {}", i, pool.get_best());
         // Print generation
         print!("{}", i);
