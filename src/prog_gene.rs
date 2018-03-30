@@ -19,12 +19,13 @@ fn rand_prog<R: Rng>(rng: &mut R) -> lang::Prog {
         lang::Prog::D(rng.gen_range(-10, 11))
     } else {
         // 50% chance of command
-        let cmd = match rng.gen_range(0, 5) {
+        let cmd = match rng.gen_range(0, 6) {
             0 => lang::Command::Add,
             1 => lang::Command::Sub,
             2 => lang::Command::Mult,
             3 => lang::Command::Div,
-            _ => lang::Command::Dup,
+            4 => lang::Command::Dup,
+            _ => lang::Command::Swap,
         };
         lang::Prog::C(cmd)
     }

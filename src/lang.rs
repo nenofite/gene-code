@@ -12,6 +12,7 @@ pub enum Command {
     Mult,
     Div,
     Dup,
+    Swap,
 }
 
 // Either a piece of data or a command. Programs are sequences of Progs
@@ -68,6 +69,14 @@ impl Stack {
                 let a = self.pop();
                 // Push it twice
                 self.push(a);
+                self.push(a);
+            }
+            Swap => {
+                // Pop two
+                let b = self.pop();
+                let a = self.pop();
+                // Push reverse
+                self.push(b);
                 self.push(a);
             }
         }
@@ -156,6 +165,19 @@ mod tests {
         s.push(3);
         s.run(Command::Div); // 7 / 3
         assert_eq!(s.pop(), 2);
+        assert_eq!(s.data.len(), 0);
+
+        s.push(7);
+        s.run(Command::Dup); // 7 -> 7 7
+        assert_eq!(s.pop(), 7);
+        assert_eq!(s.pop(), 7);
+        assert_eq!(s.data.len(), 0);
+
+        s.push(7);
+        s.push(3);
+        s.run(Command::Swap); // 7 3 -> 3 7
+        assert_eq!(s.pop(), 7);
+        assert_eq!(s.pop(), 3);
         assert_eq!(s.data.len(), 0);
 
         // We can run whole programs (sequences of commands)
