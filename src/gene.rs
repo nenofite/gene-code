@@ -111,15 +111,15 @@ impl<T, F> Pool<T, F>
         }
     }
 
-    // Get the current best gene. This is only valid after a call to evolve.
-    pub fn get_best(&self) -> &T {
+    // Get the current best gene and its fitness. This is only valid after a call to evolve.
+    pub fn get_best(&self) -> (&T, f32) {
         let mut best = &self.genes[0];
         for g in &self.genes {
             if g.1 > best.1 {
                 best = g;
             }
         }
-        &best.0
+        (&best.0, best.1)
     }
 }
 
@@ -189,5 +189,8 @@ mod tests {
         for g in &pool.genes {
             assert_eq!(g.0.id as f32, g.1);
         }
+
+        assert_eq!(pool.get_best().0.id, 906);
+        assert_eq!(pool.get_best().1, 906.0);
     }
 }
